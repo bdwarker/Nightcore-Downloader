@@ -11,7 +11,7 @@ import tkinter as tk
 from plyer import notification
 import webbrowser
 
-app_Version = "1.1.0"
+app_Version = "1.0.0"
 application_get_url = "https://unerasable.github.io/application.json"
 def check_valid_status_code(request):
     if request.status_code == 200:
