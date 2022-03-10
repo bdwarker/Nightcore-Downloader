@@ -6,6 +6,7 @@ import requests
 from colorama import Fore, Style
 from numpy import take
 from pytube import Playlist
+from pytube import YouTube
 import eyed3
 from moviepy.editor import *
 os.system("cls")
@@ -68,25 +69,89 @@ def download(playlist, album_input, album_artist_input, save_Loc):
             os.remove("%s.jpg" % os.path.join(save_Loc, str(video.video_id)))
             os.system(f'eyed3 "{os.path.join(save_Loc, str(video.video_id))}.mp3"')
             print(f'{Fore.GREEN}Downloaded {video.title}!{Style.RESET_ALL}')
+    print(f'{Fore.GREEN}[INFO]{Fore.RESET} All videos downloaded!')
+    main()
 
-
-
-def main():
-    pl = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the playlist URL: ")
-    album_input = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the album name: ")
-    album_artist_input = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the album artist: ")
-    save_Loc = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the save location: ")
+def downloadOneFile(url, artist, album, save_Loc):
     try:
-        playlist = Playlist(pl)
-        if album_input == "":
-            album_input = "Unknown"
-        if album_artist_input == "":
-            album_artist_input = "Unknown"
+        video = YouTube(url)
+        if album == "":
+            album = "Unknown"
+        if artist == "":
+            artist = "Unknown"
         if save_Loc == "":
             save_Loc = "."
-        download(playlist, album_input, album_artist_input, save_Loc)
-    except:
-        print(f"{Fore.RED}[ERROR]{Fore.RESET} Invalid playlist URL")
+        video.streams.first().download(output_path=save_Loc, filename=video.title+ ".mp4")
+        response = requests.get(str(video.thumbnail_url))
+        with open(os.path.join(save_Loc, f"{video.title}.jpg"), "wb") as f:
+            f.write(response.content)
+        videoe = VideoFileClip("%s.mp4" % os.path.join(save_Loc, video.title))
+        videoe.audio.write_audiofile("%s.mp3" % os.path.join(save_Loc, video.title))
+        videoe.close()
+        os.remove("%s.mp4" % os.path.join(save_Loc, video.title))
+        song = eyed3.load(f"{os.path.join(save_Loc, video.title)}.mp3")
+        song.tag.images.set(3, open(f"{os.path.join(save_Loc, f'{video.title}.jpg')}", 'rb').read(), 'image/jpeg')
+        song.tag.artist = f"{artist}"
+        song.tag.album = f"{album}"
+        song.tag.title = f"{video.title}"
+        song.tag.save()
+        os.remove("%s.jpg" % os.path.join(save_Loc, video.title))
+        os.system(f'eyed3 "{os.path.join(save_Loc, video.title)}.mp3"')
+        print(f'{Fore.GREEN}Downloaded {video.title}!{Style.RESET_ALL}')
+        main()
+    except Exception as e:
+        print(f'{Fore.RED}[ERROR]{Fore.RESET} {video.title} failed to download')
+        print(f"{Fore.YELLOW}[WARNING]{Fore.RESET} Using the video ID to download...")
+        video.streams.first().download(output_path=save_Loc, filename=str(video.video_id)+ ".mp4")
+        response = requests.get(str(video.thumbnail_url))
+        with open(os.path.join(save_Loc, f"{str(video.video_id)}.jpg"), "wb") as f:
+            f.write(response.content)
+        videoe = VideoFileClip("%s.mp4" % os.path.join(save_Loc, str(video.video_id)))
+        videoe.audio.write_audiofile("%s.mp3" % os.path.join(save_Loc, str(video.video_id)))
+        videoe.close()
+        os.remove("%s.mp4" % os.path.join(save_Loc, str(video.video_id)))
+        song = eyed3.load(f"{os.path.join(save_Loc, str(video.video_id))}.mp3")
+        song.tag.images.set(3, open(f"{os.path.join(save_Loc, f'{str(video.video_id)}.jpg')}", 'rb').read(), 'image/jpeg')
+        song.tag.artist = f"{video.author}"
+        song.tag.album = f"{album}"
+        song.tag.album_artist = f"{artist}"
+        song.tag.title = f"{video.title}"
+        song.tag.save()
+        os.remove("%s.jpg" % os.path.join(save_Loc, str(video.video_id)))
+        os.system(f'eyed3 "{os.path.join(save_Loc, str(video.video_id))}.mp3"')
+        print(f'{Fore.GREEN}Downloaded {video.title}!{Style.RESET_ALL}')
+
+def main():
+    vidorpl = input(f'{Fore.GREEN}[INFO]{Fore.RESET} Would you like to download a playlist or a video(pl/vid): ')
+    if vidorpl.lower() == "pl":
+        pl = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the playlist URL: ")
+        album_input = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the album name: ")
+        album_artist_input = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the album artist: ")
+        save_Loc = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the save location: ")
+        try:
+            playlist = Playlist(pl)
+            if album_input == "":
+                album_input = "Unknown"
+            if album_artist_input == "":
+                album_artist_input = "Unknown"
+            if save_Loc == "":
+                save_Loc = "."
+            download(playlist, album_input, album_artist_input, save_Loc)
+        except:
+            print(f"{Fore.RED}[ERROR]{Fore.RESET} Invalid playlist URL")
+            main()
+    elif vidorpl.lower() == "vid":
+        try:
+            url = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the video URL: ")
+            artist = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the album artist: ")
+            album = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the album: ")
+            save_Loc = input(f"{Fore.BLUE}[INPUT]{Fore.RESET} Enter the save location: ")
+            downloadOneFile(url, artist, album, save_Loc)
+        except:
+            print(f"{Fore.RED}[ERROR]{Fore.RESET} An error occured please try again")
+            main()
+    else:
+        print(f"{Fore.RED}[ERROR]{Fore.RESET} Invalid input")
         main()
 
 
@@ -107,3 +172,6 @@ elif app_Version < checkAppVer:
     print(f"{Fore.RED}[ERROR]{Fore.RESET} You are using a version that has not even been released? HOWWW?")
     print(f"{Fore.YELLOW}[WARNING]{Fore.RESET} You can download the latest version from {app_URL['nightcoreDownloader']['download']}")
     exit()
+
+if __name__ == "__main__":
+    main()
