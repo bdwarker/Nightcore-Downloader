@@ -9,5 +9,6 @@ Clone the project and go the the project directory, open command prompt in that 
 ```
 • Automatically makes the files so that they will be able to show in Discord's Rich Presence in spotify.
 • Able to download whole playlists.
+• Able to download vidoes.
 • Simple to use.
 ```
