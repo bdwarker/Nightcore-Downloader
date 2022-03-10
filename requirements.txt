@@ -1,0 +1,5 @@
+eyed3==0.9.6
+moviepy==1.0.3
+pytube==12.0.0
+requests==2.27.1
+plyer==2.0.0
