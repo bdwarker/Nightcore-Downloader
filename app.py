@@ -9,9 +9,11 @@ from pytube import Playlist
 from pytube import YouTube
 import eyed3
 from moviepy.editor import *
+import unicodedata
+import re
 os.system("cls")
 # app version
-app_Version = "1.0.0"
+app_Version = "1.1.0"
 jsonFile = "https://unerasable.github.io/application.json"
 def check_valid_status_code(request):
     if request.status_code == 200:
@@ -24,7 +26,21 @@ def get_application_get_url():
     return data
 app_URL=get_application_get_url()
 checkAppVer = f"{app_URL['nightcoreDownloader']['verson']}"
-
+def slugify(value, allow_unicode=False):
+    """
+    Taken from https://github.com/django/django/blob/master/django/utils/text.py
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+    dashes to single dashes. Remove characters that aren't alphanumerics,
+    underscores, or hyphens. Convert to lowercase. Also strip leading and
+    trailing whitespace, dashes, and underscores.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize('NFKC', value)
+    else:
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value.lower())
+    return re.sub(r'[-\s]+', '-', value).strip('-_')
 
 def download(playlist, album_input, album_artist_input, save_Loc):
     for video in playlist.videos:
@@ -49,25 +65,24 @@ def download(playlist, album_input, album_artist_input, save_Loc):
             os.system(f'eyed3 "{os.path.join(save_Loc, video.title)}.mp3"')
             print(f'{Fore.GREEN}Downloaded {video.title}!{Style.RESET_ALL}')
         except:
-            print(f'{Fore.RED}[ERROR]{Fore.RESET} {video.title} failed to download')
-            print(f"{Fore.YELLOW}[WARNING]{Fore.RESET} Using the video ID to download...")
-            video.streams.first().download(output_path=save_Loc, filename=str(video.video_id)+ ".mp4")
+            vid_NewName = slugify(video.title)
+            video.streams.first().download(output_path=save_Loc, filename=str(vid_NewName)+ ".mp4")
             response = requests.get(str(video.thumbnail_url))
-            with open(os.path.join(save_Loc, f"{str(video.video_id)}.jpg"), "wb") as f:
+            with open(os.path.join(save_Loc, f"{str(vid_NewName)}.jpg"), "wb") as f:
                 f.write(response.content)
-            videoe = VideoFileClip("%s.mp4" % os.path.join(save_Loc, str(video.video_id)))
-            videoe.audio.write_audiofile("%s.mp3" % os.path.join(save_Loc, str(video.video_id)))
+            videoe = VideoFileClip("%s.mp4" % os.path.join(save_Loc, str(vid_NewName)))
+            videoe.audio.write_audiofile("%s.mp3" % os.path.join(save_Loc, str(vid_NewName)))
             videoe.close()
-            os.remove("%s.mp4" % os.path.join(save_Loc, str(video.video_id)))
-            song = eyed3.load(f"{os.path.join(save_Loc, str(video.video_id))}.mp3")
-            song.tag.images.set(3, open(f"{os.path.join(save_Loc, f'{str(video.video_id)}.jpg')}", 'rb').read(), 'image/jpeg')
+            os.remove("%s.mp4" % os.path.join(save_Loc, str(vid_NewName)))
+            song = eyed3.load(f"{os.path.join(save_Loc, str(vid_NewName))}.mp3")
+            song.tag.images.set(3, open(f"{os.path.join(save_Loc, f'{str(vid_NewName)}.jpg')}", 'rb').read(), 'image/jpeg')
             song.tag.artist = f"{video.author}"
             song.tag.album = f"{album_input}"
             song.tag.album_artist = f"{album_artist_input}"
             song.tag.title = f"{video.title}"
             song.tag.save()
-            os.remove("%s.jpg" % os.path.join(save_Loc, str(video.video_id)))
-            os.system(f'eyed3 "{os.path.join(save_Loc, str(video.video_id))}.mp3"')
+            os.remove("%s.jpg" % os.path.join(save_Loc, str(vid_NewName)))
+            os.system(f'eyed3 "{os.path.join(save_Loc, str(vid_NewName))}.mp3"')
             print(f'{Fore.GREEN}Downloaded {video.title}!{Style.RESET_ALL}')
     print(f'{Fore.GREEN}[INFO]{Fore.RESET} All videos downloaded!')
     main()
@@ -100,25 +115,26 @@ def downloadOneFile(url, artist, album, save_Loc):
         print(f'{Fore.GREEN}Downloaded {video.title}!{Style.RESET_ALL}')
         main()
     except Exception as e:
+        vid_NewName = slugify(video.title)
         print(f'{Fore.RED}[ERROR]{Fore.RESET} {video.title} failed to download')
         print(f"{Fore.YELLOW}[WARNING]{Fore.RESET} Using the video ID to download...")
-        video.streams.first().download(output_path=save_Loc, filename=str(video.video_id)+ ".mp4")
+        video.streams.first().download(output_path=save_Loc, filename=str(vid_NewName)+ ".mp4")
         response = requests.get(str(video.thumbnail_url))
-        with open(os.path.join(save_Loc, f"{str(video.video_id)}.jpg"), "wb") as f:
+        with open(os.path.join(save_Loc, f"{str(vid_NewName)}.jpg"), "wb") as f:
             f.write(response.content)
-        videoe = VideoFileClip("%s.mp4" % os.path.join(save_Loc, str(video.video_id)))
-        videoe.audio.write_audiofile("%s.mp3" % os.path.join(save_Loc, str(video.video_id)))
+        videoe = VideoFileClip("%s.mp4" % os.path.join(save_Loc, str(vid_NewName)))
+        videoe.audio.write_audiofile("%s.mp3" % os.path.join(save_Loc, str(vid_NewName)))
         videoe.close()
-        os.remove("%s.mp4" % os.path.join(save_Loc, str(video.video_id)))
-        song = eyed3.load(f"{os.path.join(save_Loc, str(video.video_id))}.mp3")
-        song.tag.images.set(3, open(f"{os.path.join(save_Loc, f'{str(video.video_id)}.jpg')}", 'rb').read(), 'image/jpeg')
+        os.remove("%s.mp4" % os.path.join(save_Loc, str(vid_NewName)))
+        song = eyed3.load(f"{os.path.join(save_Loc, str(vid_NewName))}.mp3")
+        song.tag.images.set(3, open(f"{os.path.join(save_Loc, f'{str(vid_NewName)}.jpg')}", 'rb').read(), 'image/jpeg')
         song.tag.artist = f"{video.author}"
         song.tag.album = f"{album}"
         song.tag.album_artist = f"{artist}"
         song.tag.title = f"{video.title}"
         song.tag.save()
-        os.remove("%s.jpg" % os.path.join(save_Loc, str(video.video_id)))
-        os.system(f'eyed3 "{os.path.join(save_Loc, str(video.video_id))}.mp3"')
+        os.remove("%s.jpg" % os.path.join(save_Loc, str(vid_NewName)))
+        os.system(f'eyed3 "{os.path.join(save_Loc, str(vid_NewName))}.mp3"')
         print(f'{Fore.GREEN}Downloaded {video.title}!{Style.RESET_ALL}')
 
 def main():
